@@ -1,0 +1,9 @@
+/elpa
+/eshell
+/auto-save-list
+/transient
+.lsp-session-v1
+bookmarks
+*~
+*.el
+projectile-bookmarks.eld

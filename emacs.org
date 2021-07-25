@@ -1,0 +1,660 @@
+#+title Emacs Configuration
+#+PROPERTY: header-args:emacs-lisp :tangle ./init.el :mkdirp yes 
+
+* Package System Setup
+
+#+BEGIN_SRC emacs-lisp
+
+;; Initialize package sources
+(require 'package)
+
+(setq package-archives '(("melpa" . "https://melpa.org/packages/")
+			 ("org" . "https://orgmode.org/elpa/")
+			 ("elpa" . "https://elpa.gnu.org/packages/")))
+
+(setq package-archives-priorities
+      '(("melpa" . 20)
+	("org" . 15)
+	("elpa" . 10)))
+
+(package-initialize)
+(unless package-archive-contents
+  (package-refresh-contents))
+
+(unless (package-installed-p 'use-package)
+  (package-install 'use-package))
+
+(require 'use-package)
+(setq use-package-always-ensure t)
+
+#+END_SRC
+
+* Basic UI Configuration
+
+Basic UI configuration
+
+#+BEGIN_SRC emacs-lisp
+
+(setq inhibit-startup-message t)
+
+(scroll-bar-mode -1) ; Disable visible scrollbar
+(tool-bar-mode -1) ; Disable the toolbar
+(tooltip-mode -1) ; Disable tooltips
+(menu-bar-mode -1) ; Disable the menubar
+(set-fringe-mode 10) ; Give some breathing room
+
+;; Set up the visible bell
+(setq visible-bell t)
+
+(column-number-mode)
+(global-display-line-numbers-mode t)
+
+;; Set frame transparency
+(set-frame-parameter (selected-frame) 'alpha '(90 . 90))
+(add-to-list 'default-frame-alist '(alpha . (90 . 90)))
+(set-frame-parameter (selected-frame) 'fullscreen 'maximized)
+(add-to-list 'default-frame-alist '(fullscreen . maximized))
+
+;; Disable line numbers for some modes
+(dolist (mode '(org-mode-hook
+		term-mode-hook
+		shell-mode-hook
+		eshell-mode-hook))
+  (add-hook mode (lambda () (display-line-numbers-mode 0))))
+
+#+END_SRC
+
+** Font Configuration
+
+#+BEGIN_SRC emacs-lisp
+
+(set-face-attribute 'default nil :font "Fira Code Retina" :height 110)
+
+;; Set the fixed pitch face
+(set-face-attribute 'fixed-pitch nil :font "Fira Code Retina" :height 110)
+
+;; Set the variable pitch face
+(set-face-attribute 'variable-pitch nil :font "Vazir FD" :height 115 :weight 'regular)
+
+#+END_SRC
+
+* Keybinding Configuration
+
+#+BEGIN_SRC emacs-lisp
+
+(use-package general
+  :config
+  (general-create-definer my-leader-def
+    :prefix "C-c C-x"))
+
+#+END_SRC
+
+* UI Configuration
+
+** Command Log Mode
+
+#+BEGIN_SRC emacs-lisp
+
+(use-package command-log-mode)
+
+#+END_SRC
+
+** Color Theme
+
+#+BEGIN_SRC emacs-lisp
+
+(use-package doom-themes
+  :init (load-theme 'doom-molokai t))
+
+#+END_SRC
+
+** Better Modeline
+
+#+BEGIN_SRC emacs-lisp
+
+(use-package all-the-icons)
+
+(use-package doom-modeline
+  :init (doom-modeline-mode 1))
+
+#+END_SRC
+
+** Which Key
+
+#+BEGIN_SRC emacs-lisp
+
+(use-package which-key
+  :init (which-key-mode)
+  :diminish which-key-mode
+  :config
+  (setq which-key-idle-delay 0.3))
+
+#+END_SRC
+
+** Ivy and Counsel
+
+#+BEGIN_SRC emacs-lisp
+
+(use-package ivy
+  :diminish
+  :bind (("C-s" . swiper)
+	 :map ivy-minibuffer-map
+	 ("TAB" . ivy-alt-done)
+	 ("C-l" . ivy-alt-done)
+	 ("C-j" . ivy-next-line)
+	 ("C-k" . ivy-previous-line)
+	 :map ivy-switch-buffer-map
+	 ("C-k" . ivy-previous-line)
+	 ("C-l" . ivy-done)
+	 ("C-d" . ivy-switch-buffer-kill)
+	 :map ivy-reverse-i-search-map
+	 ("C-k" . ivy-previous-line)
+	 ("C-d" . ivy-reverse-i-search-kill))
+  :config
+  (ivy-mode 1))
+
+(use-package counsel
+  :bind (("M-x" . counsel-M-x)
+	 ("C-x b" . counsel-ibuffer)
+	 ("C-x C-f" . counsel-find-file)
+	 :map minibuffer-local-map
+	 ("C-r" . 'counsel-minibuffer-history))
+  :custom
+  (counsel-linux-app-format-function #'counsel-linux-app-format-function-name-only)
+  :config
+  (counsel-mode 1))
+
+#+END_SRC
+
+** Helpful Help Commands
+
+#+BEGIN_SRC emacs-lisp
+
+(use-package helpful
+  :custom
+  (counsel-describe-function-function #'helpful-callable)
+  (counsel-describe-variable-function #'helpful-variable)
+  :bind
+  ([remap describe-function] . counsel-describe-function)
+  ([remap describe-command] . helpful-command)
+  ([remap describe-variable] . counsel-describe-variable)
+  ([remap describe-key] . helpful-key))
+
+#+END_SRC
+
+** Text Scaling
+
+#+BEGIN_SRC emacs-lisp
+
+(use-package hydra)
+(defhydra hydra-text-scale (:timeout 5)
+  "scale text"
+  ("j" text-scale-increase "in")
+  ("k" text-scale-decrease "out")
+  ("f" nil "finished" :exit t))
+(my-leader-def
+  "t" '(:ignore t :which-key "toggles")
+  "ts" '(hydra-text-scale/body :which-key "scale-text"))
+
+#+END_SRC
+
+* Org Mode
+
+** Better Font Faces
+
+#+BEGIN_SRC emacs-lisp
+
+(defun efs/org-font-setup ()
+  ;; Replace list hyphen with dot
+  (font-lock-add-keywords 'org-mode
+                          '(("^ *\\([-]\\) "
+                             (0 (prog1 () (compose-region (match-beginning 1) (match-end 1) "•"))))))
+
+  ;; Set faces for heading levels
+  (dolist (face '((org-level-1 . 1.2)
+                  (org-level-2 . 1.1)
+                  (org-level-3 . 1.05)
+                  (org-level-4 . 1.0)
+                  (org-level-5 . 1.1)
+                  (org-level-6 . 1.1)
+                  (org-level-7 . 1.1)
+                  (org-level-8 . 1.1)))
+    (set-face-attribute (car face) nil :font "Vazir FD" :weight 'regular :height (cdr face)))
+
+  ;; Ensure that anything that should be fixed-pitch in Org files appears that way
+  (set-face-attribute 'org-block nil :foreground nil :inherit 'fixed-pitch)
+  (set-face-attribute 'org-code nil   :inherit '(shadow fixed-pitch))
+  (set-face-attribute 'org-table nil   :inherit '(shadow fixed-pitch))
+  (set-face-attribute 'org-verbatim nil :inherit '(shadow fixed-pitch))
+  (set-face-attribute 'org-special-keyword nil :inherit '(font-lock-comment-face fixed-pitch))
+  (set-face-attribute 'org-meta-line nil :inherit '(font-lock-comment-face fixed-pitch))
+  (set-face-attribute 'org-checkbox nil :inherit 'fixed-pitch))
+
+#+END_SRC
+
+** Basic Config
+
+#+BEGIN_SRC emacs-lisp
+
+(defun efs/org-mode-setup ()
+  (org-indent-mode)
+  (variable-pitch-mode 1)
+  (auto-fill-mode 0)
+  (visual-line-mode 1))
+
+(use-package org
+  :hook (org-mode . efs/org-mode-setup)
+  :config
+  (setq org-ellipsis " ▾"
+	org-hide-emphasis-markers t)
+  (setq org-agenda-start-with-log-mode t)
+  (setq org-log-done 'time)
+  (setq org-log-into-drawer t)
+  (setq org-agenda-files
+	'("~/OrgFiles/Tasks.org"))
+  (efs/org-font-setup))
+
+(setq org-refile-targets
+      '(("Archive.org" :maxlevel . 1)
+	("Tasks.org" :maxlevel . 1)))
+
+;; Save org buffers after refiling!
+(advice-add 'org-refile :after 'org-save-all-org-buffers)
+
+(setq org-capture-templates
+      `(("t" "Tasks / Projects")
+	("tt" "Tasks" entry (file+olp "~/OrgFiles/Tasks.org" "Inbox")
+	 "** TODO %?\n  %U\n  %a\n  %i" :emptylines 1)
+
+	("n" "Notes")
+	("nn" "Notes" entry
+	 (file+olp+datetree "~/OrgFiles/Notes.org")
+	 "\n* %<%I:%M %p> - Note \n\n%?\n\n"
+	 :clock-in :clock-resume
+	 :empty-lines 1)
+
+	("m" "Metrics Capture")
+	("ms" "Study Hour" table-line (file+headline "~/OrgFiles/Metrics.org" "Study")
+	 "| %U | %^{Study Hour} | %^{Notes} |" :killbuffer t)))
+
+(global-set-key (kbd "C-c j") 'org-capture)
+
+#+END_SRC
+
+** Nicer Heading Bullets
+
+#+BEGIN_SRC emacs-lisp
+
+(use-package org-bullets
+  :after org
+  :hook (org-mode . org-bullets-mode)
+  :custom
+  (org-bullets-bullet-list '("◉" "○" "●" "○" "●" "○" "●")))
+
+#+END_SRC
+
+** Center Org Buffers
+
+#+BEGIN_SRC emacs-lisp
+
+(defun efs/org-mode-visual-fill ()
+  (setq visual-fill-column-width 100
+        visual-fill-column-center-text t)
+  (visual-fill-column-mode 1))
+
+(use-package visual-fill-column
+  :hook (org-mode . efs/org-mode-visual-fill))
+
+#+END_SRC
+
+** Configure Babel Languages
+
+#+BEGIN_SRC emacs-lisp
+
+(org-babel-do-load-languages
+  'org-babel-load-languages
+  '((emacs-lisp . t)
+    (python . t)
+    (R . t)))
+
+(push '("conf-unix" . conf-unix) org-src-lang-modes)
+
+#+END_SRC
+
+** Auto-tangle Configuration
+
+#+BEGIN_SRC emacs-lisp
+
+;; Automatically tangle our Emacs.org config file when we save it
+(defun efs/org-babel-tangle-config ()
+  (when (string-equal (file-name-directory (buffer-file-name))
+                      (expand-file-name "~/.emacs.d/"))
+    ;; Dynamic scoping to the rescue
+    (let ((org-confirm-babel-evaluate nil))
+      (org-babel-tangle))))
+
+(add-hook 'org-mode-hook (lambda () (add-hook 'after-save-hook #'efs/org-babel-tangle-config)))
+
+#+END_SRC
+
+* Development
+
+** Language Server Protocol (LSP)
+
+*** lsp-mode
+
+#+BEGIN_SRC emacs-lisp
+
+(use-package lsp-mode
+  :commands (lsp lsp-deferred)
+  :init
+  (setq lsp-keymap-prefix "C-c l")
+  :config
+  (lsp-enable-which-key-integration t))
+
+#+END_SRC
+
+*** lsp-ui
+
+#+BEGIN_SRC emacs-lisp
+
+(use-package lsp-ui
+  :hook (lsp-mode . lsp-ui-mode)
+  :custom
+  (lsp-ui-doc-position 'bottom))
+
+#+END_SRC
+
+*** lsp-treemacs
+
+#+BEGIN_SRC emacs-lisp
+
+(use-package lsp-treemacs
+  :after lsp)
+
+#+END_SRC
+
+*** lsp-ivy
+
+#+BEGIN_SRC emacs-lisp
+
+(use-package lsp-ivy)
+
+#+END_SRC
+
+** Electric Pair Mode
+
+#+BEGIN_SRC emacs-lisp
+
+(use-package elec-pair
+  :hook
+  (org-mode . electric-pair-local-mode)
+  (lsp-mode . electric-pair-local-mode)
+  :custom
+  ((electric-pair-pairs
+        '(
+          (?\" . ?\")
+          (?\{ . ?\})
+          (?\' . ?\')))))
+
+#+END_SRC
+
+** Languages
+
+*** R
+
+#+BEGIN_SRC emacs-lisp
+
+(use-package ess)
+
+;; Show images in emacs buffer in org mode
+(add-hook 'org-babel-after-execute-hook 'org-display-inline-images)
+(add-hook 'org-mode-hook 'org-display-inline-images)
+
+#+END_SRC
+
+** Company Mode
+
+#+BEGIN_SRC emacs-lisp
+
+(use-package company
+  :after lsp-mode
+  :hook (lsp-mode . company-mode)
+  :bind (:map company-active-map
+         ("<tab>" . company-complete-selection))
+        (:map lsp-mode-map
+         ("<tab>" . company-indent-or-complete-common))
+  :custom
+  (company-minimum-prefix-length 1)
+  (company-idle-delay 0.0))
+
+(use-package company-box
+  :hook (company-mode . company-box-mode))
+
+#+END_SRC
+
+** Commenting
+
+#+BEGIN_SRC emacs-lisp
+
+(use-package evil-nerd-commenter
+  :bind ("M-/" . evilnc-comment-or-uncomment-lines))
+
+#+END_SRC
+
+** Projectile
+
+#+BEGIN_SRC emacs-lisp
+
+(use-package projectile
+  :diminish projectile-mode
+  :config (projectile-mode)
+  :custom ((projectile-completion-system 'ivy))
+  :bind-keymap
+  ("C-c p" . projectile-command-map)
+  :init
+  (when (file-directory-p "~/Documents/dev")
+    (setq projectile-project-search-path '("~/Documents/dev")))
+  (setq projectile-switch-project-action #'projectile-dired))
+
+(use-package counsel-projectile
+  :config (counsel-projectile-mode))
+
+#+END_SRC
+
+** Magit
+
+#+BEGIN_SRC emacs-lisp
+
+(use-package magit
+  :custom
+  (magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1))
+
+(use-package forge)
+
+#+END_SRC
+
+** Rainbox Delimiters
+
+#+BEGIN_SRC emacs-lisp
+
+(use-package rainbow-delimiters
+  :hook (prog-mode . rainbow-delimiters-mode))
+
+#+END_SRC
+
+* Terminals
+
+** Term Mode
+
+- "C-c C-k" -> Enter to char mode
+- "C-c C-j" -> Enter to line mode
+
+#+BEGIN_SRC emacs-lisp
+
+(use-package term
+  :config
+  (setq explicit-shell-file-name "zsh"))
+
+#+END_SRC
+
+*** For Better Color Support
+
+#+BEGIN_SRC emacs-lisp
+
+(use-package eterm-256color
+  :hook (term-mode . eterm-256color-mode))
+
+#+END_SRC
+
+** Eshell
+
+#+BEGIN_SRC emacs-lisp
+
+(defun efs/configure-eshell ()
+  ;; Save command history when commands are entered
+  (add-hook 'eshell-pre-command-hook 'eshell-save-some-history)
+
+  ;; Truncate buffer for performance
+  (add-to-list 'eshell-output-filter-functions 'eshell-truncate-buffer)
+
+  (setq eshell-history-size         10000
+        eshell-buffer-maximum-lines 10000
+        eshell-hist-ignoredups t
+        eshell-scroll-to-bottom-on-input t))
+
+(use-package eshell-git-prompt)
+
+(use-package eshell
+  :hook (eshell-first-time-mode . efs/configure-eshell)
+  :config
+  (with-eval-after-load 'esh-opt
+    (setq eshell-destroy-buffer-when-process-dies t)
+    (setq eshell-visual-commands '("htop" "zsh" "vim" "lolcat")))
+  (eshell-git-prompt-use-theme 'robbyrussell))
+
+#+END_SRC
+
+* File Management
+
+** Dired
+
+*** Key Bindings
+
+**** Navigation
+
+*Emacs* / *Evil*
+- =n= / =j= - next line
+- =p= / =k= - previous line
+- =j= / =J= - jump to file in buffer
+- =RET= - select file or directory
+- =^= - go to parent directory
+- =S-RET= / =g O= - Open file in "other" window
+- =M-RET= - Show file in other window without focusing (previewing files)
+- =g o= (=dired-view-file=) - Open file but in a "preview" mode, close with =q=
+- =g= Refresh the buffer with =revert-buffer= after changing configuration (and after filesystem changes!)
+
+**** Marking files
+
+- =m= - Marks a file
+- =u= - Unmarks a file
+- =U= - Unmarks all files in buffer
+- =* t= / =t= - Inverts marked files in buffer
+- =% m= - Mark files in buffer using regular expression
+- =*= - Lots of other auto-marking functions
+- =k= - "Kill" marked items (refresh buffer with =g= to get them back)
+- Many operations can be done on a single file if there are no active marks!
+ 
+**** Copying and Renaming files
+
+- =C= - Copy marked files (or if no files are marked, the current file)
+- Copying single and multiple files
+- =U= - Unmark all files in buffer
+- =R= - Rename marked files, renaming multiple is a move!
+- =% R= - Rename based on regular expression: =^test= , =old-\&=
+
+*Power command*: =C-x C-q= (=dired-toggle-read-only=) - Makes all file names in the buffer editable directly to rename them!  Press =Z Z= to confirm renaming or =Z Q= to abort.
+
+**** Deleting files
+
+- =D= - Delete marked file
+- =d= - Mark file for deletion
+- =x= - Execute deletion for marks
+- =delete-by-moving-to-trash= - Move to trash instead of deleting permanently
+
+**** Creating and extracting archives
+
+- =Z= - Compress or uncompress a file or folder to (=.tar.gz=)
+- =c= - Compress selection to a specific file
+- =dired-compress-files-alist= - Bind compression commands to file extension
+
+**** Other common operations
+
+- =T= - Touch (change timestamp)
+- =M= - Change file mode
+- =O= - Change file owner
+- =G= - Change file group
+- =S= - Create a symbolic link to this file
+- =L= - Load an Emacs Lisp file into Emacs
+
+*** Configuration
+
+#+BEGIN_SRC emacs-lisp
+
+(use-package dired
+  :ensure nil
+  :commands (dired dired-jump)
+  :bind (("C-x C-j" . dired-jump))
+  :custom ((dired-listing-switches "-agho --group-directories-first")))
+
+#+END_SRC
+
+**** File Icons
+
+#+BEGIN_SRC emacs-lisp
+
+(use-package all-the-icons-dired
+  :hook (dired-mode . all-the-icons-dired-mode))
+
+#+END_SRC
+
+**** Open External Files
+
+#+BEGIN_SRC emacs-lisp
+
+(use-package dired-open
+  :config
+  (setq dired-open-extensions '(("png" . "feh")
+                                ("jpg" . "feh")
+                                ("mp4" . "vlc")
+                                ("mkv" . "vlc"))))
+
+#+END_SRC
+
+**** Single Dired Buffer
+
+#+BEGIN_SRC emacs-lisp
+
+(use-package dired-single
+  :bind (
+  :map dired-mode-map
+  ("h" . dired-single-up-directory)
+  ("l" . dired-single-buffer)))
+
+#+END_SRC
+
+**** Hide / Show Dotfiles
+
+#+BEGIN_SRC emacs-lisp
+
+(use-package dired-hide-dotfiles
+  :hook (dired-mode . dired-hide-dotfiles-mode)
+  :bind(
+  :map dired-mode-map
+  ("H" . dired-hide-dotfiles-mode)))
+
+#+END_SRC
+
+* Applications
+
+For Custom Application Configurations
