@@ -7,3 +7,4 @@ bookmarks
 *~
 *.el
 projectile-bookmarks.eld
+forge-database.sqlite

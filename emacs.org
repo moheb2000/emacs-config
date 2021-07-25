@@ -1,6 +1,16 @@
 #+title Emacs Configuration
 #+PROPERTY: header-args:emacs-lisp :tangle ./init.el :mkdirp yes 
 
+* Set Environmental Variables
+
+#+BEGIN_SRC emacs-lisp
+
+(setenv "PATH" (concat
+                "/home/mohammad/FlutterSdk/flutter/bin" ":"
+                (getenv "PATH")))
+
+#+END_SRC
+
 * Package System Setup
 
 #+BEGIN_SRC emacs-lisp
@@ -339,18 +349,40 @@ Basic UI configuration
 
 * Development
 
+** Yasnippet
+
+#+BEGIN_SRC emacs-lisp
+
+(use-package yasnippet)
+
+(use-package yasnippet-snippets)
+
+#+END_SRC
+
 ** Language Server Protocol (LSP)
 
 *** lsp-mode
 
 #+BEGIN_SRC emacs-lisp
 
+(defun efs/lsp-install-save-hooks () "Install save hooks for lsp."
+  (add-hook 'before-save-hook #'lsp-format-buffer t t)
+  (add-hook 'before-save-hook #'lsp-organize-imports t t))
+
+(defun efs/lsp-mode-setup ()
+  (setq lsp-headerline-breadcrumb-segments '(path-up-to-project file symbols))
+  (lsp-headerline-breadcrumb-mode))
+
 (use-package lsp-mode
   :commands (lsp lsp-deferred)
+  :hook (lsp-mode . efs/lsp-mode-setup)
   :init
   (setq lsp-keymap-prefix "C-c l")
   :config
-  (lsp-enable-which-key-integration t))
+  (lsp-enable-which-key-integration t)
+  :custom
+  (lsp-lens-enable t)
+  (lsp-signature-auto-activate nil))
 
 #+END_SRC
 
@@ -389,7 +421,6 @@ Basic UI configuration
 (use-package elec-pair
   :hook
   (org-mode . electric-pair-local-mode)
-  (lsp-mode . electric-pair-local-mode)
   :custom
   ((electric-pair-pairs
         '(
@@ -400,6 +431,21 @@ Basic UI configuration
 #+END_SRC
 
 ** Languages
+
+*** Dart and Flutter
+
+#+BEGIN_SRC emacs-lisp
+
+(use-package dart-mode)
+
+(use-package lsp-dart
+  :hook
+  (dart-mode . lsp-deferred)
+  (dart-mode . efs/lsp-install-save-hooks)
+  :custom
+  (lsp-dart-sdk-dir "~/FlutterSdk/flutter/bin/cache/dart-sdk"))
+
+#+END_SRC
 
 *** R
 
@@ -425,8 +471,8 @@ Basic UI configuration
         (:map lsp-mode-map
          ("<tab>" . company-indent-or-complete-common))
   :custom
-  (company-minimum-prefix-length 1)
-  (company-idle-delay 0.0))
+  (company-minimum-prefix-length 3)
+  (company-idle-delay 0.3))
 
 (use-package company-box
   :hook (company-mode . company-box-mode))
