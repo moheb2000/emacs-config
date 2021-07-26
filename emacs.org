@@ -69,7 +69,8 @@ Basic UI configuration
 (dolist (mode '(org-mode-hook
 		term-mode-hook
 		shell-mode-hook
-		eshell-mode-hook))
+		eshell-mode-hook
+               treemacs-mode-hook))
   (add-hook mode (lambda () (display-line-numbers-mode 0))))
 
 #+END_SRC
@@ -421,6 +422,7 @@ Basic UI configuration
 (use-package elec-pair
   :hook
   (org-mode . electric-pair-local-mode)
+  (dart-mode . electric-pair-local-mode)
   :custom
   ((electric-pair-pairs
         '(
@@ -450,8 +452,10 @@ Basic UI configuration
   :hook
   (dart-mode . lsp-deferred)
   (dart-mode . efs/lsp-install-save-hooks)
+  (dart-mode . yas-minor-mode)
   :custom
-  (lsp-dart-sdk-dir "~/FlutterSdk/flutter/bin/cache/dart-sdk"))
+  (lsp-dart-sdk-dir "~/FlutterSdk/flutter/bin/cache/dart-sdk")
+  (lsp-dart-flutter-sdk-dir "~/FlutterSdk/flutter"))
 
 #+END_SRC
 
