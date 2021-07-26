@@ -436,7 +436,15 @@ Basic UI configuration
 
 #+BEGIN_SRC emacs-lisp
 
-(use-package dart-mode)
+(use-package flutter
+  :after dart-mode
+  :bind (:map dart-mode-map
+              ("C-M-x" . #'flutter-run-or-hot-reload))
+  :custom
+  (flutter-sdk-path "~/FlutterSdk/flutter"))
+
+(use-package dart-mode
+  :hook (dart-mode . flutter-test-mode))
 
 (use-package lsp-dart
   :hook

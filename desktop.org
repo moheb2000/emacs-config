@@ -43,6 +43,21 @@
 (defun efs/exwm-update-class ()
   (exwm-workspace-rename-buffer exwm-class-name))
 
+(defun efs/exwm-update-title ()
+  (pcase exwm-class-name
+    ("Firefox" (exwm-workspace-rename-buffer (format "Firefox: %s" exwm-title)))
+    ("vlc" (exwm-workspace-rename-buffer (format "vlc: %s" exwm-title)))))
+
+(defun efs/configure-window-by-class ()
+  (interactive)
+  (pcase exwm-class-name
+    ("Firefox" (exwm-workspace-move-window 2))
+    ("Google-chrome" (exwm-workspace-move-window 2))
+    ("vlc" (exwm-workspace-move-window 3))
+    ("TelegramDesktop" (exwm-workspace-move-window 0))
+    ("discord" (exwm-workspace-move-window 0))
+    ("Skype" (exwm-workspace-move-window 0))))
+
 (use-package exwm
   :config
   ;; Set the default number of workspaces
@@ -50,6 +65,10 @@
 
   ;; When window "class" updates, use it to set the buffer name
   (add-hook 'exwm-update-class-hook #'efs/exwm-update-class)
+  ;; When window title updates, use it to set the buffer name
+  (add-hook 'exwm-update-title-hook #'efs/exwm-update-title)
+  ;; Configure windows as they're created
+  (add-hook 'exwm-manage-finish-hook #'efs/configure-window-by-class)
   ;; When EXWM starts up, do some extra confifuration
   (add-hook 'exwm-init-hook #'efs/exwm-init-hook)
 
