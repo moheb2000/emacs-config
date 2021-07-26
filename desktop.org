@@ -25,7 +25,7 @@
   ;; (eshell)
 
   ;; Show battery status in the mode line
-  (display-battery-mode 1)
+  ;; (display-battery-mode 1)
 
   ;; Show the time and date in modeline
   ;; (setq display-time-day-and-date t)
@@ -326,16 +326,16 @@ label = %date% %time%
 
 [module/battery]
 type = internal/battery
-battery = BAT0
-adapter = ADP1
+battery = BAT1
+adapter = ACAD
 full-at = 98
 time-format = %-l:%M
 
-label-charging = %percentage%% / %time%
-format-charging = <animation-charging> <label-charging>
+label-charging = %percentage%%
+format-charging = <ramp-capacity> <label-charging>
 format-charging-underline = ${colors.underline-1}
 
-label-discharging = %percentage%% / %time%
+label-discharging = %percentage%%
 format-discharging = <ramp-capacity> <label-discharging>
 format-discharging-underline = ${self.format-charging-underline}
 
@@ -347,13 +347,6 @@ ramp-capacity-1 = 
 ramp-capacity-2 = 
 ramp-capacity-3 = 
 ramp-capacity-4 = 
-
-animation-charging-0 = 
-animation-charging-1 = 
-animation-charging-2 = 
-animation-charging-3 = 
-animation-charging-4 = 
-animation-charging-framerate = 750
 
 [module/temperature]
 type = internal/temperature
