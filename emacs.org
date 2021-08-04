@@ -350,6 +350,17 @@ Basic UI configuration
 
 * Development
 
+** Better Performance
+
+#+BEGIN_SRC emacs-lisp
+
+(setq gc-cons-threshold (* 100 1024 1024))
+(setq read-process-output-max (* 1024 1024))
+(setq lsp-idle-delay 0.500)
+(setq lsp-log-io nil)
+
+#+END_SRC
+
 ** Yasnippet
 
 #+BEGIN_SRC emacs-lisp
@@ -423,6 +434,8 @@ Basic UI configuration
   :hook
   (org-mode . electric-pair-local-mode)
   (dart-mode . electric-pair-local-mode)
+  (css-mode . electric-pair-local-mode)
+  (js-mode . electric-pair-local-mode)
   :custom
   ((electric-pair-pairs
         '(
@@ -456,6 +469,86 @@ Basic UI configuration
   :custom
   (lsp-dart-sdk-dir "~/FlutterSdk/flutter/bin/cache/dart-sdk")
   (lsp-dart-flutter-sdk-dir "~/FlutterSdk/flutter"))
+
+#+END_SRC
+
+*** HTML
+
+#+BEGIN_SRC emacs-lisp
+
+(use-package html-mode
+  :mode "\\.html\\'"
+  :ensure nil
+  :hook
+  (html-mode . lsp-deferred)
+  (html-mode . efs/lsp-install-save-hooks)
+  (html-mode . yas-minor-mode)
+  :custom
+  (lsp-html-auto-closing-tags nil))
+
+(defun efs/my-sgml-insert-gt ()
+  "Inserts a `>' character and calls 
+`efs/my-sgml-close-tag-if-necessary', leaving point where it is."
+  (interactive)
+  (insert ">")
+  (save-excursion (efs/my-sgml-close-tag-if-necessary)))
+
+(defun efs/my-sgml-close-tag-if-necessary ()
+  "Calls sgml-close-tag if the tag immediately before point is
+an opening tag that is not followed by a matching closing tag."
+  (when (looking-back "<\\s-*\\([^</> \t\r\n]+\\)[^</>]*>")
+    (let ((tag (match-string 1)))
+      (unless (and (not (sgml-unclosed-tag-p tag))
+           (looking-at (concat "\\s-*<\\s-*/\\s-*" tag "\\s-*>")))
+    (sgml-close-tag)))))
+
+(eval-after-load "sgml-mode"
+  '(define-key sgml-mode-map ">" 'efs/my-sgml-insert-gt))
+
+
+#+END_SRC
+
+*** CSS
+
+#+BEGIN_SRC emacs-lisp
+
+(use-package css-mode
+  :ensure nil
+  :hook
+  (css-mode . lsp-deferred)
+  (css-mode . efs/lsp-install-save-hooks)
+  (css-mode . yas-minor-mode))
+
+#+END_SRC
+
+*** JavaScript
+
+#+BEGIN_SRC emacs-lisp
+
+(use-package js-mode
+  :ensure nil
+  :hook
+  (js-mode . lsp-deferred)
+  (js-mode . efs/lsp-install-save-hooks)
+  (js-mode . yas-minor-mode))
+
+#+END_SRC
+
+**** VueJs
+
+#+BEGIN_SRC emacs-lisp
+
+(use-package prettier-js)
+
+(use-package vue-mode
+  :mode "\\.vue\\'"
+  :hook
+  (vue-mode . lsp-deferred)
+  (vue-mode . prettier-js-mode)
+  (vue-mode . efs/lsp-install-save-hooks)
+  (vue-mode . yas-minor-mode)
+  :config
+  (setq prettier-js-args '("--parser vue")))
 
 #+END_SRC
 
